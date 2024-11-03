@@ -14,8 +14,9 @@ public class PositionSpringHandler : SpringBehaviourHandler<Vector2Spring, Vecto
             else transform.localPosition = value;
         }
     }
-    protected override bool IShouldPrintDebugStatements { get { return false; } }
     protected override bool IShouldContinueSpringing => Vector2.Distance(ValueToTarget, AToBSpring.EndValue) > .001f || !AToBSpring.IsSpringVelocityNearZero();
+
+    protected override bool IShouldPrintDebugStatements { get { return false; } }
 
     protected override void CalculateOutput(Vector2Spring mySpring)
     {

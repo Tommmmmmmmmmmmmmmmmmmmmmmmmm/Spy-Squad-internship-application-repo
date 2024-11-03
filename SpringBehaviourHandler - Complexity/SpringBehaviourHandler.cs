@@ -23,6 +23,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
     [SerializeField] private bool updateSimulationSpeedAfterEachSpring;
 
     [OnValueChanged("RealignValues")]
+    [Tooltip("The random value is calculated as springSimulationSpeedRandomness.x + a random number between -springSimulationSpeedRandomness.y and springSimulationSpeedRandomness.y")]
     [SerializeField] private Vector2 springSimulationSpeedRandomness = new(1, 0);
     [ShowNonSerializedField]
     private float simulationSpeedMultiplier;
@@ -99,7 +100,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
 
     private void Start()
     {
-        // Make sure all recivers are at their rest values. We do this in start to ensure that we dont enter any race conditions with recievers that set default values in awake
+        // Make sure all recivers are at their rest values. We do this in start to ensure that we dont enter any race conditions with recievers that use awake to set themselves up
         AToBSpring.EndValue = ValueToTarget;
         ContinuousSpring.EndValue = ValueToTarget;
 
@@ -109,7 +110,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
 
     #endregion
 
-    #region Utility functions for external triggering
+    #region Utility functions for external use
 
     public void InturruptSpring()
     {
@@ -120,21 +121,19 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
 
     public void TriggerSpringOfType(SpringMode springMode, U value)
     {
-        if (springMode == SpringMode.AToB)       TriggerSpringTo               (value);
+        if (springMode == SpringMode.AToB) TriggerSpringTo(value);
         if (springMode == SpringMode.Continuous) StartSpringToContinuous(value);
     }
 
-    public U GetSpringStartValue  (SpringMode springMode) => springMode == SpringMode.AToB ? AToBSpring.StartValue   : ContinuousSpring.StartValue;
+    public U GetSpringStartValue(SpringMode springMode) => springMode == SpringMode.AToB ? AToBSpring.StartValue : ContinuousSpring.StartValue;
     public U GetSpringCurrentValue(SpringMode springMode) => springMode == SpringMode.AToB ? AToBSpring.CurrentValue : ContinuousSpring.CurrentValue;
-    public U GetSpringEndValue    (SpringMode springMode) => springMode == SpringMode.AToB ? AToBSpring.EndValue     : ContinuousSpring.EndValue;
+    public U GetSpringEndValue(SpringMode springMode) => springMode == SpringMode.AToB ? AToBSpring.EndValue : ContinuousSpring.EndValue;
 
     #endregion
 
     #region Springing stuff
 
     protected abstract U ValueToTarget { get; set; }
-
-    private readonly CoroutineControl internalShouldStopAllCoroutines = CoroutineControl.StopAllCoroutines;
 
     #region Nudging
 
@@ -146,7 +145,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
     {
         HandleSpringTriggering(internalShouldStopAllCoroutines);
 
-        if (isAToBSpringing || isNudging) HandleAToBSpringSetupForNudgeWhenIsNudgingOrSpringing(nudgeAmount);
+        if (isAToBSpringing || isNudging) HandleAToBSpringSetupForNudgeWhenAlreadyNudgingOrSpringing(nudgeAmount);
         else
         {
             AToBSpring.Reset();
@@ -156,7 +155,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
         StartCoroutine(HandleNudge());
     }
 
-    protected virtual void HandleAToBSpringSetupForNudgeWhenIsNudgingOrSpringing(U nudgeAmount)
+    protected virtual void HandleAToBSpringSetupForNudgeWhenAlreadyNudgingOrSpringing(U nudgeAmount)
     {
         AToBSpring.InitialVelocity = nudgeAmount;
         AToBSpring.UpdateEndValue(AToBSpring.EndValue, nudgeAmount);
@@ -171,6 +170,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
 
     private IEnumerator HandleNudge()
     {
+        // It's a little bit jank, but if we start triggering the nudge here both the velocity and current value will not equal zero when "IShouldContinueSpringing" is first called, meaning it doesn't neeed to consider that the values both usually start at zero - something IShouldContinueSpringing could be written to do, but would require added complexity, and I prefer the simplicity of this solution 
         HandleSpringEvaluationUltilisation(SpringMode.AToB);
         isNudging = true;
 
@@ -193,7 +193,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
     {
         HandleSpringTriggering(internalShouldStopAllCoroutines);
 
-        if (isAToBSpringing || isNudging) HandleAToBSpringSetupForSpringingWhenIsNudgingOrSpringing(targetValue);
+        if (isAToBSpringing || isNudging) HandleAToBSpringSetupForSpringingWhenAlreadyNudgingOrSpringing(targetValue);
         else
         {
             AToBSpring.Reset();
@@ -203,7 +203,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
         StartCoroutine(DoSpringTo());
     }
 
-    protected virtual void HandleAToBSpringSetupForSpringingWhenIsNudgingOrSpringing(U test)
+    protected virtual void HandleAToBSpringSetupForSpringingWhenAlreadyNudgingOrSpringing(U test)
     {
         AToBSpring.UpdateEndValue(test, AToBSpring.CurrentVelocity);
     }
@@ -221,9 +221,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
         while (IShouldContinueSpringing)
         {
             if (!isAToBSpringing) yield break;
-
             HandleSpringEvaluationUltilisation(SpringMode.AToB);
-
             yield return null;
         }
 
@@ -300,7 +298,7 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
     // Is used by both AToB springing and nudging
     private void HandleSpringReachingItsDestination()
     {
-        // We set the value to the end value as the springs almost always end when the values aren't exactly the same 
+        // We set the ValueToTarget to the springs end value, as the springs are designed to instead end when they're extremely close to it 
         ValueToTarget = AToBSpring.EndValue;
         AToBSpring.Reset();
         CalculateOutput(AToBSpring);
@@ -335,6 +333,8 @@ public abstract class SpringBehaviourHandler<T, U> : MonoBehaviour where T : Exp
     #endregion
 
     private enum CoroutineControl { StopAllCoroutines, DontStopAllCoroutines }
+
+    private readonly CoroutineControl internalShouldStopAllCoroutines = CoroutineControl.StopAllCoroutines;
 
     private void HandleSpringTriggering(CoroutineControl shouldStopAllCoroutines)
     {

@@ -7,9 +7,10 @@ using System;
 
 public class FloatSpringHandler : ArbitraryValueSpringHandler<FloatSpring, float>
 {
-    protected override bool IShouldPrintDebugStatements { get { return false; } }
     protected override float ValueToTarget { get { return myValue; }  set { myValue = value; } }
     protected override bool IShouldContinueSpringing => Mathf.Abs(myValue - AToBSpring.EndValue) > .005f || !AToBSpring.IsSpringVelocityNearZero();
+
+    protected override bool IShouldPrintDebugStatements { get { return false; } }
 
     protected override void CalculateOutput(FloatSpring mySpring)
     {

@@ -4,7 +4,7 @@ For SpringBehaviourHandler, I recommend looking at SpringBehaviourHandler first 
 
 For my collection of UnityEvent composition scripts, I recommend skimming over the Triggerers folder first, then either of the other two.
 
-And as for yarn, you'd of course need to play the game to really get a feel for it, but there's also the option of watching a clip of a steamer play it.
+And as for yarn, you'd of course need to play the game to really get a feel for it, but I've also provided the option of watching a clip of a steamer play it.
 
 Link to the game: https://o4foxsake.itch.io/yarn
 

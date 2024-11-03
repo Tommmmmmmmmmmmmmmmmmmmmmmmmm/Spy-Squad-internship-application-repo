@@ -1,6 +1,6 @@
 # Spy Squd internship application repository
 
-For SpringBehaviourHandler, I recommend looking at SpringBehaviourHandler first (which is a lot easier to look through in an IDE than the github file viewer), then either of the two child scripts.
+For SpringBehaviourHandler, I recommend looking at SpringBehaviourHandler first (which is a lot easier to look through in an IDE than the github file viewer), then either of the two child scripts. If some added context would be helpful, I'd recommend this video on springs (https://youtu.be/bFOAipGJGA0?t=23), though I'd also love to talk in more detail about this system in a future interview.
 
 For my collection of UnityEvent composition scripts, I recommend skimming over the Triggerers folder first, then either of the other two.
 
